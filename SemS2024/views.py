@@ -13,9 +13,19 @@ def home(request):
     return render(request, 'home.html', {'xml_data_list': xml_data_list})
 
 
+from django.views.decorators.csrf import csrf_exempt
+import os
+from django.conf import settings
+from .models import XMLData
+import xml.etree.ElementTree as ET
+from lxml import etree as ET_LXML
+
 @csrf_exempt
 def upload_xml(request):
     if request.method == 'POST':
+        if 'file' not in request.FILES:
+            return render(request, 'upload.html', {'error': 'No file was uploaded.'})
+
         xml_file = request.FILES['file']
         xml_content = xml_file.read().decode('utf-8')
 
@@ -33,14 +43,14 @@ def upload_xml(request):
             xsd_file_path = os.path.join(settings.MEDIA_ROOT, 'schema.xsd')
             xslt_file_path = os.path.join(settings.MEDIA_ROOT, 'transform.xsl')
             result_tree = validate_xml_file(xml_file_path, xsd_file_path, xslt_file_path)
-            transformed_xml = ET.tostring(result_tree, pretty_print=True).decode('utf-8')
+            transformed_xml = ET_LXML.tostring(result_tree, pretty_print=True).decode('utf-8')
 
             # Update the transformed content in the database
             xml_data.transformed_content = transformed_xml
             xml_data.save()
 
             return render(request, 'validate.html', {'transformed_xml': transformed_xml, 'status': 'success'})
-        except (ET.XMLSchemaError, ET.XSLTApplyError, ET.XMLSyntaxError) as e:
+        except (ET.XMLSchemaError, ET_LXML.XSLTApplyError, ET.XMLSyntaxError) as e:
             xml_data.transformed_content = "ERROR in Validation"
             xml_data.save()
             return render(request, 'validate.html', {'error': str(e), 'status': 'error'})
@@ -62,28 +72,25 @@ def validate_xml(request):
 
 
 def validate_xml_file(xml_file_path, xsd_file_path, xslt_file_path):
-    # Load and validate XML against XSD
-    with open(xsd_file_path, 'rb') as f:
-        schema_root = ET.XML(f.read())
-    schema = ET.XMLSchema(schema_root)
+    # Parse the XML file
+    xml_tree = ET.parse(xml_file_path)
 
-    with open(xml_file_path, 'rb') as f:
-        xml_doc = ET.XML(f.read())
+    # Parse the XSD file
+    xsd_tree = ET_LXML.parse(xsd_file_path)
+    xsd_schema = ET_LXML.XMLSchema(xsd_tree)
 
-    try:
-        schema.assertValid(xml_doc)
-    except ET.DocumentInvalid as e:
-        raise ET.XMLSchemaError(f"XML Schema validation error: {str(e)}")
+    # Validate the XML against the XSD schema
+    if not xsd_schema.validate(ET_LXML.fromstring(ET.tostring(xml_tree.getroot()))):
+        raise ET.XMLSchemaError("XML validation failed against the XSD schema.")
 
-    # Transform XML using XSLT
-    with open(xslt_file_path, 'rb') as f:
-        xslt_root = ET.XML(f.read())
-    transform = ET.XSLT(xslt_root)
-    result_tree = transform(xml_doc)
+    # Parse the XSLT file
+    xslt_tree = ET_LXML.parse(xslt_file_path)
+    xslt_transformer = ET_LXML.XSLT(xslt_tree)
+
+    # Transform the XML using the XSLT
+    result_tree = xslt_transformer(ET_LXML.fromstring(ET.tostring(xml_tree.getroot())))
 
     return result_tree
-
-
 def get_root_element_name(xsd_file_path):
     tree = ET.parse(xsd_file_path)
     root = tree.getroot()
