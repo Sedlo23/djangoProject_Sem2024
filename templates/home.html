@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>XML Data List</h1>
+    <a href="/upload/" class="btn btn-primary">Upload XML</a>
+    <a href="/create/" class="btn btn-success">Create New XML</a>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Content</th>
+                <th>Transformed Content</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for xml_data in xml_data_list %}
+            <tr>
+                <td>{{ xml_data.id }}</td>
+                <td><pre>{{ xml_data.content }}</pre></td>
+                <td><pre>{{ xml_data.transformed_content|safe }}</pre></td>
+                <td>{{ xml_data.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

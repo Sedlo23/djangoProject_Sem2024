@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Validation Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Validation Results</h1>
+        {% if status == 'success' %}
+            <div class="alert alert-success">
+                <h4 class="alert-heading">Validation and Transformation Successful!</h4>
+                <pre>{{ transformed_xml|safe }}</pre>
+            </div>
+        {% elif status == 'error' %}
+            <div class="alert alert-danger">
+                <h4 class="alert-heading">Error during Validation/Transformation</h4>
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+        <a href="/" class="btn btn-primary">Go Home</a>
+        <a href="/upload/" class="btn btn-secondary">Upload Another File</a>
+    </div>
+</body>
+</html>
