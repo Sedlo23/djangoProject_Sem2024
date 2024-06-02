@@ -43,7 +43,7 @@ def upload_xml(request):
             xsd_file_path = os.path.join(settings.MEDIA_ROOT, 'schema.xsd')
             xslt_file_path = os.path.join(settings.MEDIA_ROOT, 'transform.xsl')
             result_tree = validate_xml_file(xml_file_path, xsd_file_path, xslt_file_path)
-            transformed_xml = ET_LXML.tostring(result_tree, pretty_print=True).decode('utf-8')
+            transformed_xml = ET_LXML.tostring(result_tree).decode('utf-8')
 
             # Update the transformed content in the database
             xml_data.transformed_content = transformed_xml
